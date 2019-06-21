@@ -1,0 +1,128 @@
+{
+  "name": "Public Survey DAG",
+
+  "namespace":"Stanford\\PublicSurveyDag",
+
+  "description": "Assign a public url for each DAG in a project",
+
+  "versions": [
+    { "0.1": "Initial" }
+  ],
+
+  "authors": [
+    {
+      "name": "Andrew Martin",
+      "email": "andy123@stanford.edu",
+      "institution": "Stanford University"
+    }
+  ],
+
+  "permissions": [
+  ],
+
+  "no-auth-pages": [
+  ],
+
+  "links": {
+    "control-center": [
+    ],
+    "project": [
+      {
+        "name": "Public Survey DAG Config",
+        "icon": "gear",
+        "url": "urls.php"
+      }
+    ]
+  },
+
+  "system-settings": [
+    {
+      "key": "enable-system-debug-logging",
+      "name": "<b>Enable Debug Logging</b><br>If you have the Stanford emLogger external module installed and configured, you can enable additional debug-level logging through this checkbox",
+      "required": false,
+      "type": "checkbox"
+    }
+  ],
+
+  "project-settings": [
+    {
+      "key": "mapping",
+      "name": "Field Mapping",
+      "required": false,
+      "type": "sub_settings",
+      "repeatable": true,
+      "sub_settings": [
+        {
+          "key": "ua_option",
+          "name": "<b>User-Agent Value</b><br>This is the value obtained from the client",
+          "required": true,
+          "type": "dropdown",
+          "choices": [
+            {
+              "name":"IP Address (best guess)",
+              "value": "ip-address"
+            },
+            {
+              "name":"Remote Address (php remote addr)",
+              "value": "remote-addr"
+            },
+            {
+              "name":"Remote IP if using load balancer (x-forwarded-for)",
+              "value": "x-forwarded-for"
+            },
+            {
+              "name":"The url of the referring site",
+              "value": "referrer"
+            },
+            {
+              "name":"Hostname (from IP address -- may only work on local networks)",
+              "value": "hostname-from-ip"
+            },
+            {
+              "name":"Browser Name",
+              "value": "browser-name"
+            },
+            {
+              "name":"User Agent",
+              "value": "user-agent"
+            },
+            {
+              "name":"Platform",
+              "value": "platform"
+            },
+            {
+              "name":"Platform Version",
+              "value": "platform-version"
+            },
+            {
+              "name":"Is Mobile",
+              "value": "is-mobile"
+            },
+            {
+              "name":"Is Robot",
+              "value": "is-robot"
+            }
+          ]
+        },
+        {
+          "key": "field_name",
+          "name": "<b>Destination Field Name</b><br>This is the field where the value will go",
+          "required": true,
+          "type": "field-list"
+        },
+        {
+          "key": "overwrite",
+          "name": "<b>Check to overwrite an existing value</b><br>(for save and return-later scenarios where the survey might be opened more than once)",
+          "required": false,
+          "type": "checkbox"
+        }
+      ]
+    },
+    {
+      "key": "enable-project-debug-logging",
+      "name": "<b>Enable Debug Logging</b><br>If you have the Stanford emLogger external module installed and configured, you can enable additional debug-level logging through this checkbox",
+      "required": false,
+      "type": "checkbox"
+    }
+  ]
+}
