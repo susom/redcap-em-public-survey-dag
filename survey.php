@@ -3,13 +3,27 @@ namespace Stanford\PublicSurveyDag;
 /** @var \Stanford\PublicSurveyDag\PublicSurveyDag $module */
 
 
-use REDCap;
+// GET THE DAG ID FROM THE URL
+$dag_id = $module->getDagFromUrl();
+if (empty($dag_id)) {
+    die("Invalid URL");
+}
 
-// GET LIST OF DAGS
+// MAKE SURE IT IS STILL VALID (DAGS COULD HAVE BEEN REMOVED/DELETED
+$dags = $module->getDags();
+if (! array_key_exists($dag_id, $dags)) {
+    die("Invalid DAG: $dag_id");
+}
 
-$dags = REDCap::getGroupNames();
+// CREATE THE NEW RECORD
+$id = $module->createRecordFromDag($dag_id);
+if (!$id) {
+    die("Unable to create a new record in group $dag_id");
+}
 
+die($id);
 
-$module->emDebug($dags);
+// REDIRECT TO THE FIRST SURVEY
+$url = $module->getFirstSurveyUrl($id);
 
-?>
+redirect($url);

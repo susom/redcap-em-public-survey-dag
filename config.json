@@ -21,6 +21,7 @@
   ],
 
   "no-auth-pages": [
+    "survey"
   ],
 
   "links": {
@@ -28,7 +29,7 @@
     ],
     "project": [
       {
-        "name": "Public Survey DAG Config",
+        "name": "Public Survey DAG URLs",
         "icon": "gear",
         "url": "urls.php"
       }
@@ -36,6 +37,12 @@
   },
 
   "system-settings": [
+    {
+      "key": "use-api-urls",
+      "name": "<b>Enable API Urls</b><br>If you use shibboleth authentication, you may be forced to use API-based urls for your public survey url equivalents.  Check this box to do so.",
+      "required": false,
+      "type": "checkbox"
+    },
     {
       "key": "enable-system-debug-logging",
       "name": "<b>Enable Debug Logging</b><br>If you have the Stanford emLogger external module installed and configured, you can enable additional debug-level logging through this checkbox",
@@ -46,77 +53,10 @@
 
   "project-settings": [
     {
-      "key": "mapping",
-      "name": "Field Mapping",
+      "key": "prefix-record-with-dag",
+      "name": "<b>DAG Prefix Record Ids</b><br>If checked, newly created records will be prefixed with the DAG name - otherwise they will be auto-numbered as a single group per project",
       "required": false,
-      "type": "sub_settings",
-      "repeatable": true,
-      "sub_settings": [
-        {
-          "key": "ua_option",
-          "name": "<b>User-Agent Value</b><br>This is the value obtained from the client",
-          "required": true,
-          "type": "dropdown",
-          "choices": [
-            {
-              "name":"IP Address (best guess)",
-              "value": "ip-address"
-            },
-            {
-              "name":"Remote Address (php remote addr)",
-              "value": "remote-addr"
-            },
-            {
-              "name":"Remote IP if using load balancer (x-forwarded-for)",
-              "value": "x-forwarded-for"
-            },
-            {
-              "name":"The url of the referring site",
-              "value": "referrer"
-            },
-            {
-              "name":"Hostname (from IP address -- may only work on local networks)",
-              "value": "hostname-from-ip"
-            },
-            {
-              "name":"Browser Name",
-              "value": "browser-name"
-            },
-            {
-              "name":"User Agent",
-              "value": "user-agent"
-            },
-            {
-              "name":"Platform",
-              "value": "platform"
-            },
-            {
-              "name":"Platform Version",
-              "value": "platform-version"
-            },
-            {
-              "name":"Is Mobile",
-              "value": "is-mobile"
-            },
-            {
-              "name":"Is Robot",
-              "value": "is-robot"
-            }
-          ]
-        },
-        {
-          "key": "field_name",
-          "name": "<b>Destination Field Name</b><br>This is the field where the value will go",
-          "required": true,
-          "type": "field-list"
-        },
-        {
-          "key": "overwrite",
-          "name": "<b>Check to overwrite an existing value</b><br>(for save and return-later scenarios where the survey might be opened more than once)",
-          "required": false,
-          "type": "checkbox"
-        }
-      ]
+      "type": "checkbox"
     },
     {
       "key": "enable-project-debug-logging",
@@ -124,5 +64,6 @@
       "required": false,
       "type": "checkbox"
     }
+
   ]
 }
