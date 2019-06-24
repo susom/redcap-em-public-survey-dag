@@ -21,8 +21,6 @@ if (!$id) {
     die("Unable to create a new record in group $dag_id");
 }
 
-die($id);
-
 // REDIRECT TO THE FIRST SURVEY
 $url = $module->getFirstSurveyUrl($id);
 
