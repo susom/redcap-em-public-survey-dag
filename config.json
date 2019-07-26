@@ -54,13 +54,13 @@
   "project-settings": [
     {
       "key": "prefix-record-with-dag",
-      "name": "<b>DAG Prefix Record Ids</b><br>If checked, newly created records will be prefixed with the DAG name - otherwise they will be auto-numbered as a single group per project",
+      "name": "<b>DAG Prefix Record Ids</b><br>If checked, newly created records will be prefixed with the DAG name (e.g. Stanford-1) - otherwise they will be auto-numbered as a single group per project",
       "required": false,
       "type": "checkbox"
     },
     {
       "key": "use-dag-id-instead",
-      "name": "<b>Use DAG ID instead</b><br>If you prefix with DAG name above but want DAG ids instead, check this box",
+      "name": "<b>DAG Prefix with DAG ID</b><br>To prefix new records with DAG ID (e.g. 17-1) instead of DAG Name (e.g. Stanford-1) you must check this box AND the one above",
       "required": false,
       "type": "checkbox"
     },
