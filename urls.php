@@ -8,11 +8,13 @@ include_once (APP_PATH_DOCROOT . "ProjectGeneral/header.php");
 
 
 global $Proj;
-if (! $Proj->project['surveys_enabled']) {
+$survey_enabled = $Proj->project['surveys_enabled'];
+if (! $survey_enabled) {
     die ("This only works if you have surveys enabled");
 }
 
-if (empty($module->getPublicSurveyUrl())) {
+$url_exists = $module->getPublicSurveyUrl();
+if (empty($url_exists)) {
     die ("You must have a public survey url for this to work");
 }
 

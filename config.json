@@ -59,6 +59,12 @@
       "type": "checkbox"
     },
     {
+      "key": "use-dag-id-instead",
+      "name": "<b>Use DAG ID instead</b><br>If you prefix with DAG name above but want DAG ids instead, check this box",
+      "required": false,
+      "type": "checkbox"
+    },
+    {
       "key": "enable-project-debug-logging",
       "name": "<b>Enable Debug Logging</b><br>If you have the Stanford emLogger external module installed and configured, you can enable additional debug-level logging through this checkbox",
       "required": false,

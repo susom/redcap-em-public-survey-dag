@@ -22,6 +22,7 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
         return $this->dags;
     }
 
+
     public function getPublicDagUrl($dag_id) {
         $use_api_urls = $this->getSystemSetting("use-api-urls");
         $base = $this->getUrl("survey.php",true, $use_api_urls);
@@ -95,12 +96,15 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
 
 
     /**
-     * Like next ID but prefixes id with the DAG name (e.g. stanford-1)
+     * Like next ID but prefixes id with the DAG name (e.g. stanford-1) or DAG ID (e.g. 15-1)
      * @param $dag_id
      * @return string
      */
     function getNextDagId($dag_id) {
-        $dagName = REDCap::getGroupNames(true,$dag_id) . "-";
+
+        $use_id_instead = $this->getProjectSetting('use-dag-id-instead');
+
+        $dagName = ( $use_id_instead ? $dag_id : REDCap::getGroupNames(true,$dag_id) ) . "-";
         $dagLen = strlen($dagName);
 
         $records = REDCap::getData('array', null, array(REDCap::getRecordIdField()));
