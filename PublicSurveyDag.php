@@ -181,6 +181,8 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
         }
         $this->emDebug("Public Dag autodelete is enabled for $pid with delay of $delay");
 
+        // Get the name of the logging table
+        $log_event_table = method_exists('\REDCap', 'getLogEventTable') ? \REDCap::getLogEventTable($pid) : "redcap_log_event";
 
         // Query to get all records where there are only group_id or record_id fields for that record in redcap_data
         // along with the time they were last modified.
@@ -197,7 +199,7 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
                 count(*) as allFields
             from
                 redcap_data rd
-                join redcap_log_event rle on rle.project_id = rd.project_id and rle.pk = rd.record
+                join " . $log_event_table . " rle on rle.project_id = rd.project_id and rle.pk = rd.record
             where
                 rd.project_id = ?
             group by
