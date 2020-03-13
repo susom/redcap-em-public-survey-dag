@@ -37,6 +37,7 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
         return $dag_id;
     }
 
+
     public function getPublicSurveyUrl() {
         global $Proj;
         $survey_id = $Proj->firstFormSurveyId;
@@ -137,5 +138,107 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
     }
 
 
+    /**
+     * Cycle through each project and call the autoDelete method
+     * @param $cron
+     */
+    function autoDeleteCron($cron) {
+        $enabledProjects = $this->framework->getProjectsWithModuleEnabled();
+        //$this->emDebug('EnabledProjects', $enabledProjects);
+        foreach($enabledProjects as $pid) {
+            $deleteUrl = $this->getUrl("autoDelete.php", true, false) . "&pid=$pid";
+            http_get($deleteUrl);
+        }
+    }
 
+
+    /**
+     * Check to see if this project has auto-delete enabled, if so, delete records
+     * This can only be called in project context
+     * @param $pid  Project ID
+     * @throws \Exception
+     */
+    function autoDelete() {
+        // Get PID
+        $pid = $this->getProjectId();
+
+        // Make sure we are in project context
+        if (empty($pid)) {
+            $this->emDebug("Method should only be called in project_context");
+            return;
+        }
+        global $Proj;
+
+        // Check if auto-delete is enabled for this PID
+        $delay = $this->getProjectSetting('auto-delete-delay', $pid);
+
+        if (empty($delay)) {
+            // Do nothing for this project
+            return;
+        } elseif(intval($delay) != $delay) {
+            $this->emDebug("Invalid auto-delete setting for project $pid:", $delay);
+            return;
+        }
+        $this->emDebug("Public Dag autodelete is enabled for $pid with delay of $delay");
+
+
+        // Query to get all records where there are only group_id or record_id fields for that record in redcap_data
+        // along with the time they were last modified.
+        $result = $this->framework->query(
+            "select
+                rd.record,
+                sum(
+                    if(
+                        rd.field_name = '__GROUPID__' OR
+                        rd.field_name = ?, 1, 0
+                    )
+                ) as defaultFields,
+                timestampdiff(HOUR, timestamp(max(rle.ts)), now()) as HoursSinceModified,
+                count(*) as allFields
+            from
+                redcap_data rd
+                join redcap_log_event rle on rle.project_id = rd.project_id and rle.pk = rd.record
+            where
+                rd.project_id = ?
+            group by
+                rd.record
+            having
+                defaultFields = allFields
+                and HoursSinceModified > ?
+            ",
+            [
+                $Proj->table_pk,
+                $pid,
+                $delay
+            ]
+        );
+
+        $records = [];
+        while($row = $result->fetch_assoc()) {
+            $this->emDebug("Row", $row);
+            $record = $row['record'];
+            if (empty($record)) continue;
+
+            $records[]=$record;
+            $this->emDebug("Deleting $record");
+            \Records::deleteRecord(
+                $record,
+                $Proj->table_pk,
+                $Proj->multiple_arms,
+                $Proj->project_id['randomization'],
+                $Proj->project['status'],
+                $Proj->project['require_change_reason'],
+                $Proj->firstArmId,
+                " (" . $this->getModuleName() . ")"
+            );
+        }
+
+        $count = count($records);
+        if ($count > 0) {
+            $msg = $this->getModuleName() . " auto-deleted $count incomplete record" . ($count > 1 ? "s" : "") .
+                " from project $pid: " . implode(",", $records);
+            \REDCap::logEvent($pid, $msg);
+            $this->emDebug($msg);
+        }
+    }
 }

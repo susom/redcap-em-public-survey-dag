@@ -17,11 +17,14 @@
     }
   ],
 
+  "framework-version" : 2,
+
   "permissions": [
   ],
 
   "no-auth-pages": [
-    "survey"
+    "survey",
+    "autoDelete"
   ],
 
   "links": {
@@ -65,11 +68,28 @@
       "type": "checkbox"
     },
     {
+      "key": "auto-delete-delay",
+      "name": "<b>Delete Incomplete Records</b><br>When someone clicks on a DAG-PUBLIC link but does not complete the survey, an 'empty' record is left behind.  To automatically delete these records enter a number of hours since creation that a record should remain.  A reasonable value is 12 hours.  If you leave this blank, no records will be auto-deleted",
+      "required": false,
+      "type": "text"
+    },
+    {
       "key": "enable-project-debug-logging",
       "name": "<b>Enable Debug Logging</b><br>If you have the Stanford emLogger external module installed and configured, you can enable additional debug-level logging through this checkbox",
       "required": false,
       "type": "checkbox"
     }
 
+  ],
+
+  "crons": [
+    {
+      "cron_name": "auto-delete",
+      "cron_description": "Delete empty records created by public dag url after a specified amount of time",
+      "method": "autoDeleteCron",
+      "cron_frequency": "60",
+      "cron_max_run_time": "60"
+    }
   ]
+
 }
