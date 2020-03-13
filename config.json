@@ -87,7 +87,7 @@
       "cron_name": "auto-delete",
       "cron_description": "Delete empty records created by public dag url after a specified amount of time",
       "method": "autoDeleteCron",
-      "cron_frequency": "60",
+      "cron_frequency": "3600",
       "cron_max_run_time": "60"
     }
   ]
