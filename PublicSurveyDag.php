@@ -3,8 +3,6 @@ namespace Stanford\PublicSurveyDag;
 
 include_once "emLoggerTrait.php";
 
-require_once APP_PATH_DOCROOT . "Surveys/survey_functions.php";
-
 use REDCap;
 use Survey;
 
