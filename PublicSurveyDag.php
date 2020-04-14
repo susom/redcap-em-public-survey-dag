@@ -68,7 +68,8 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
         );
 
         if ($Proj->longitudinal) {
-            $data['redcap_event_name'] = $Proj->firstEventId;
+            $event_name = REDCap::getEventNames(true,true,$Proj->firstEventId);
+            $data['redcap_event_name'] = $event_name;
         }
 
         $result = REDCap::saveData('json', json_encode(array($data)), 'normal', 'YMD', 'flat', $dag_id);
