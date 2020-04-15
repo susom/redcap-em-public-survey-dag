@@ -113,7 +113,7 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
 
         // Load current records to find the current max suffix
         $records = REDCap::getData('array', null, array(REDCap::getRecordIdField()));
-        $next_suffix = 1;
+        $next_suffix = 0;
         foreach ($records as $k => $v) {
             if( substr($k, 0, $dag_len) === $dag_name ) {
                 $suffix = substr($k,$dag_len);
@@ -147,7 +147,7 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
 
         // Get current max ID
         $records = REDCap::getData('array', null, array(REDCap::getRecordIdField()));
-        $next_id = 1;
+        $next_id = 0;
         foreach ($records as $k => $v) {
             if (is_numeric($k) && $k >= $next_id) {
                 $next_id = $k;
