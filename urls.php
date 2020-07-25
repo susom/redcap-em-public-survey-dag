@@ -50,7 +50,7 @@ if (empty($url_exists)) {
         $csvOutput[] = [
             "dag_id" => $dag_id,
             "dag_name" => $dag_name,
-            "dag_url" => $dag_url
+            "dag_url" => $dagUrl
         ];
 
         ?>
@@ -69,6 +69,7 @@ if (empty($url_exists)) {
     <div>
         <pre>
             <?php
+                echo "\nDagID, DagName, DagURL\n";
                 foreach ($csvOutput as $row) {
                     echo $row['dag_id'] . ", " . $row['dag_name'] . ", " . $row['dag_url'] . "\n";
                 }
