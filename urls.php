@@ -44,11 +44,20 @@ if (empty($url_exists)) {
 <?php
     // GET LIST OF DAGS
     $dags = $module->getDags();
-    foreach ($dags as $dag_id => $dag_name) { ?>
+    $csvOutput = [];
+    foreach ($dags as $dag_id => $dag_name) {
+        $dagUrl = $module->getPublicDagUrl($dag_id);
+        $csvOutput[] = [
+            "dag_id" => $dag_id,
+            "dag_name" => $dag_name,
+            "dag_url" => $dag_url
+        ];
+
+        ?>
                     <tr>
                         <td><?php echo $dag_id ?></td>
                         <td><?php echo $dag_name ?></td>
-                        <td style="width:100%;"><input value="<?php echo $module->getPublicDagUrl($dag_id) ?>" onclick="this.select();"
+                        <td style="width:100%;"><input value="<?php echo $dagUrl ?>" onclick="this.select();"
                                    readonly="readonly" class="staticInput" style="float:left;width:600px;">
                         </td>
                     </tr>
@@ -57,7 +66,16 @@ if (empty($url_exists)) {
             </table>
         </div>
     </div>
-
+    <div>
+        <pre>
+            <?php
+                foreach ($csvOutput as $row) {
+                    list($a,$b,$c) = $row;
+                    echo "$a, $b, $c\n";
+                }
+            ?>
+        </pre>
+    </div>
 <script>
     $(document).ready( function() {
         $('#dags').DataTable();
