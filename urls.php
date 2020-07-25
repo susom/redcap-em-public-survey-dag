@@ -70,8 +70,7 @@ if (empty($url_exists)) {
         <pre>
             <?php
                 foreach ($csvOutput as $row) {
-                    list($a,$b,$c) = $row;
-                    echo "$a, $b, $c\n";
+                    echo $row['dag_id'] . ", " . $row['dag_name'] . ", " . $row['dag_url'] . "\n";
                 }
             ?>
         </pre>
