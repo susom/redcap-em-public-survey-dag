@@ -36,6 +36,12 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
         return $dag_id;
     }
 
+    public function getAdditionalParamsFromUrl() {
+        $exclude_keys = ["s", "hash", "page", "event_id", "pid", "pnid", "preview", "id", "sq", "prefix", "NOAUTH", "dag"];
+        return array_diff_key($_GET, array_flip($exclude_keys));
+
+    }
+
 
     public function getPublicSurveyUrl() {
         global $Proj;

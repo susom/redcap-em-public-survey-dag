@@ -21,7 +21,11 @@ if (!$id) {
     die("Unable to create a new record in group $dag_id");
 }
 
+$params = $module->getAdditionalParamsFromUrl();
+$query_string = http_build_query($params);
+
 // REDIRECT TO THE FIRST SURVEY
 $url = $module->getFirstSurveyUrl($id);
+$url = $url . "&" . $query_string;
 
 redirect($url);
