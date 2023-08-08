@@ -2,10 +2,7 @@
 namespace Stanford\PublicSurveyDag;
 /** @var \Stanford\PublicSurveyDag\PublicSurveyDag $module */
 
-
-
 include_once (APP_PATH_DOCROOT . "ProjectGeneral/header.php");
-
 
 global $Proj;
 $survey_enabled = $Proj->project['surveys_enabled'];
@@ -65,6 +62,8 @@ if (empty($url_exists)) {
                 </tbody>
             </table>
         </div>
+        <br/>
+        <br/>
     </div>
     <div>
         <pre>

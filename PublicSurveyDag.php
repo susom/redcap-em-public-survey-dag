@@ -3,7 +3,6 @@ namespace Stanford\PublicSurveyDag;
 
 include_once "emLoggerTrait.php";
 
-use MyCap\Study\Config\Page;
 use REDCap;
 use Survey;
 
@@ -39,7 +38,6 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
     public function getAdditionalParamsFromUrl() {
         $exclude_keys = ["s", "hash", "page", "event_id", "pid", "pnid", "preview", "id", "sq", "prefix", "NOAUTH", "dag"];
         return array_diff_key($_GET, array_flip($exclude_keys));
-
     }
 
 
@@ -48,9 +46,7 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
         $survey_id = $Proj->firstFormSurveyId;
         $event_id = $Proj->firstEventId;
         $hash = Survey::getSurveyHash($survey_id, $event_id);
-
         $public_url = APP_PATH_SURVEY_FULL . "?s=$hash";
-
         return $public_url;
     }
 
@@ -64,12 +60,9 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
     public function createRecordFromDag($dag_id) {
         global $Proj;
 
-        // Create a new record
-        $prefixDag = $this->getProjectSetting('prefix-record-with-dag');
-
-        $id = $prefixDag ? $this->getNextDagId($dag_id) : $this->getNextId();
-
-        $this->emDebug("New ID", $prefixDag, $id);
+        // Find the next new record id according to EM settings
+        $id = $this->getNextDagId($dag_id);
+        $this->emDebug("New ID", $id);
 
         $data = array(
             REDCap::getRecordIdField() => $id,
@@ -99,7 +92,7 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
     public function getFirstSurveyUrl($id) {
         global $Proj;
         // $firstFormSurveyId = $Proj->firstFormSurveyId;
-        return REDCap::getSurveyLink($id, $Proj->firstForm,$Proj->firstEventId);
+        return REDCap::getSurveyLink($id, $Proj->firstForm, $Proj->firstEventId);
     }
 
 
@@ -110,21 +103,42 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
      * @throws \Exception
      */
     function getNextDagId($dag_id) {
-        // See what kind of prefix is configured (either text or dag_id)
-        $use_id_instead = $this->getProjectSetting('use-dag-id-instead');
-        $dag_name = ( $use_id_instead ? $dag_id : REDCap::getGroupNames(true,$dag_id) ) . "-";
 
-        // Get the length of the dag prefix so we can increment the suffix
-        $dag_len = strlen($dag_name);
+        // Determine Prefix
+        $prefixDag = $this->getProjectSetting('prefix-record-with-dag');
 
-        // Load current records to find the current max suffix
+        $prefix = '';
+        $next_id = 0;
         $records = REDCap::getData('array', null, array(REDCap::getRecordIdField()));
-        $next_suffix = 0;
-        foreach ($records as $k => $v) {
-            if( substr($k, 0, $dag_len) === $dag_name ) {
-                $suffix = substr($k,$dag_len);
-                if (is_numeric($suffix) && $suffix >= $next_suffix) {
-                    $next_suffix = $suffix;
+
+        if ($prefixDag) {
+            // We need to first determine the starting point for records with this prefix
+            // e.g. stanford-123
+
+            // See what kind of prefix is configured (either text or dag_id)
+            $use_id_instead = $this->getProjectSetting('use-dag-id-instead');
+            $prefix = ( $use_id_instead ? $dag_id : REDCap::getGroupNames(true,$dag_id) ) . "-";
+
+            // Get the length of the dag prefix so we can increment the suffix
+            $prefix_len = strlen($prefix);
+
+            // Load current records to find the current max suffix
+            // TODO: add filter to database query for prefix
+            foreach ($records as $k => $v) {
+                $k_prefix = substr($k, 0, $prefix_len);
+                if( strcasecmp($k_prefix, $prefix) == 0 ) {
+                    # Case-insensitive match
+                    $suffix = substr($k,$prefix_len);
+                    if (is_numeric($suffix) && $suffix >= $max_id) {
+                        $max_id = $suffix;
+                    }
+                }
+            }
+        } else {
+            // Get current max ID
+            foreach ($records as $k => $v) {
+                if (is_numeric($k) && $k >= $max_id) {
+                    $max_id = $k;
                 }
             }
         }
@@ -132,41 +146,12 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
         // Reserve the Next_ID
         $loop_count = 0;
         do {
-            $next_suffix++;
-            $next_id = $dag_name . $next_suffix;
-            $result = self::reserveNewRecordId($this->getProjectId(), $next_id);
+            $max_id++;
+            $next_id = $prefix . $max_id;
+            $result = REDCap::reserveNewRecordId($this->getProjectId(), $next_id);
+            // $result = self::reserveNewRecordId($this->getProjectId(), $next_id);
             if ($loop_count++ > 100) {
                 throw new \Exception("Overrun in " . __METHOD__ . " - $loop_count failed attempts");
-            }
-        } while ($result === false);
-
-        return $next_id;
-    }
-
-
-    /**
-     * Get the next record id
-     * @return int|string
-     * @throws \Exception
-     */
-    function getNextId() {
-
-        // Get current max ID
-        $records = REDCap::getData('array', null, array(REDCap::getRecordIdField()));
-        $next_id = 0;
-        foreach ($records as $k => $v) {
-            if (is_numeric($k) && $k >= $next_id) {
-                $next_id = $k;
-            }
-        }
-
-        // Reserve the next_id
-        $loopCount = 0;
-        do {
-            $next_id++;
-            $result = self::reserveNewRecordId($this->getProjectId(), $next_id);
-            if ($loopCount++ > 100) {
-                throw new \Exception("Overrun in " . __METHOD__ . " - $loopCount failed attempts");
             }
         } while ($result === false);
 
@@ -179,7 +164,7 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
      * @param $cron
      */
     function autoDeleteCron($cron) {
-        $enabledProjects = $this->framework->getProjectsWithModuleEnabled();
+        $enabledProjects = $this->getProjectsWithModuleEnabled();
         //$this->emDebug('EnabledProjects', $enabledProjects);
         foreach($enabledProjects as $pid) {
             $deleteUrl = $this->getUrl("autoDelete.php", true, false) . "&pid=$pid";
@@ -188,122 +173,122 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
     }
 
 
-    /**
-     * This is a function to reserve a record and ensure it is unique.
-     * If it returns true, it will 'hold' the reserved new record for 1 hour to be saved to the REDCap data
-     * table.  If it is 'false' you must try a different record ID.
-     * @param      $project_id
-     * @param      $record
-     * @param null $event_id
-     * @param null $arm_id
-     * @return bool
-     * @throws \Exception
-     */
-    public static function reserveNewRecordId($project_id, $record, $event_id = null, $arm_id = null)
-    {
-        // SET $P AS CURRENT PROJECT
-        global $Proj;
-        /** @var \Project $P */
-        $P = (empty($Proj) || $Proj->project_id !== $project_id) ? new \Project($Proj) : $Proj;
-
-
-        // GET ARM_ID AND EVENT_ID IF NOT SUPPLIED
-        if (empty($arm_id)) {
-            if (empty($event_id)) {
-                // Missing both event_id and arm_id -- assume first arm_id
-                $arm_id = $P->firstArmId;
-                $event_id = $P->firstEventId;
-            } else {
-                // We have an event_id, but not the arm.  Let's retrieve it
-                foreach ($P->eventInfo as $p_event_id => $p_armDetail) {
-                    if ($p_event_id == $event_id) {
-                        $arm_id = $p_armDetail['arm_id'];
-                        break;
-                    }
-                }
-            }
-        } else {
-            // We have the arm
-            if (empty($event_id)) {
-                // Get event from arm
-                $event_id = $P->getFirstEventIdArmId($arm_id);
-            }
-        }
-
-        if (empty($event_id) || empty($arm_id) || empty($record)) {
-            throw new \Exception ("Missing required inputs for reserveRecord");
-        }
-
-
-        // STEP 1: CHECK THE NEW_RECORD_CACHE FIRST FOR HIGH-HIT SCENARIOS
-        // Is the record in the redcap_new_record_cache
-        $sql = sprintf("select 1 from redcap_new_record_cache
-            where project_id = %d and arm_id = %d and record = '%s'",
-            intval($project_id),
-            intval($arm_id),
-            db_escape($record)
-        );
-        $q   = db_query($sql);
-        if (!$q) {
-            throw new Exception("Unable to query redcap_new_record_cache - check your database connectivity");
-        }
-        if (db_num_rows($q) > 0) {
-            // Already used
-            return false;
-        }
-
-
-        // STEP 2: SINCE THE NEW_RECORD_CACHE DOESNT INCLUDE OLDER RECORDS, LETS CHECK THERE TOO:
-        // Is the record used in the record list or redcap_data
-        $recordListCacheStatus = \Records::getRecordListCacheStatus($project_id);
-        ## USE RECORD LIST CACHE (if completed) (requires ARM)
-        if ($recordListCacheStatus == 'COMPLETE') {
-            $sql = sprintf("select 1 from redcap_record_list
-                where project_id = %d and record = '%s' limit 1",
-                intval($project_id),
-                db_escape($record)
-            );
-        }
-        ## USE DATA TABLE
-        else {
-            $sql = sprintf("select 1 from redcap_data
-                where project_id = %d and field_name = '%s'
-                and record regexp '%s' limit 1",
-                intval($project_id),
-                db_escape($P->table_pk),
-                db_escape($record)
-            );
-        }
-        $q = db_query($sql);
-        if (!$q) {
-            throw new \Exception("Unable to query redcap_data for $record in project $project_id - check your database connectivity and system logs");
-        }
-
-        if (db_num_rows($q) > 0) {
-            // Record is used
-            return false;
-        }
-
-
-        // STEP 3: LETS TRY TO ADD IT TO THE NEW RECORD CACHE TO ENSURE IT IS STILL UNIQUE
-        $sql = sprintf("insert into redcap_new_record_cache 
-            (project_id, event_id, arm_id, record, creation_time)
-            values (%d, %d, %d, '%s', '%s')",
-            intval($project_id),
-            intval($event_id),
-            intval($arm_id),
-            db_escape($record),
-            db_escape(NOW)
-        );
-        if (db_query($sql)) {
-            // Success
-            return true;
-        } else {
-            // Duplicate or other error
-            // TODO: look at error code to differentiate from a lock error vs. another db error
-            return false;
-        }
-    }
+    // /**
+    //  * This is a function to reserve a record and ensure it is unique.
+    //  * If it returns true, it will 'hold' the reserved new record for 1 hour to be saved to the REDCap data
+    //  * table.  If it is 'false' you must try a different record ID.
+    //  * @param      $project_id
+    //  * @param      $record
+    //  * @param null $event_id
+    //  * @param null $arm_id
+    //  * @return bool
+    //  * @throws \Exception
+    //  */
+    // public static function reserveNewRecordId($project_id, $record, $event_id = null, $arm_id = null)
+    // {
+    //     // SET $P AS CURRENT PROJECT
+    //     global $Proj;
+    //     /** @var \Project $P */
+    //     $P = (empty($Proj) || $Proj->project_id !== $project_id) ? new \Project($Proj) : $Proj;
+    //
+    //
+    //     // GET ARM_ID AND EVENT_ID IF NOT SUPPLIED
+    //     if (empty($arm_id)) {
+    //         if (empty($event_id)) {
+    //             // Missing both event_id and arm_id -- assume first arm_id
+    //             $arm_id = $P->firstArmId;
+    //             $event_id = $P->firstEventId;
+    //         } else {
+    //             // We have an event_id, but not the arm.  Let's retrieve it
+    //             foreach ($P->eventInfo as $p_event_id => $p_armDetail) {
+    //                 if ($p_event_id == $event_id) {
+    //                     $arm_id = $p_armDetail['arm_id'];
+    //                     break;
+    //                 }
+    //             }
+    //         }
+    //     } else {
+    //         // We have the arm
+    //         if (empty($event_id)) {
+    //             // Get event from arm
+    //             $event_id = $P->getFirstEventIdArmId($arm_id);
+    //         }
+    //     }
+    //
+    //     if (empty($event_id) || empty($arm_id) || empty($record)) {
+    //         throw new \Exception ("Missing required inputs for reserveRecord");
+    //     }
+    //
+    //
+    //     // STEP 1: CHECK THE NEW_RECORD_CACHE FIRST FOR HIGH-HIT SCENARIOS
+    //     // Is the record in the redcap_new_record_cache
+    //     $sql = sprintf("select 1 from redcap_new_record_cache
+    //         where project_id = %d and arm_id = %d and record = '%s'",
+    //         intval($project_id),
+    //         intval($arm_id),
+    //         db_escape($record)
+    //     );
+    //     $q   = db_query($sql);
+    //     if (!$q) {
+    //         throw new Exception("Unable to query redcap_new_record_cache - check your database connectivity");
+    //     }
+    //     if (db_num_rows($q) > 0) {
+    //         // Already used
+    //         return false;
+    //     }
+    //
+    //
+    //     // STEP 2: SINCE THE NEW_RECORD_CACHE DOESNT INCLUDE OLDER RECORDS, LETS CHECK THERE TOO:
+    //     // Is the record used in the record list or redcap_data
+    //     $recordListCacheStatus = \Records::getRecordListCacheStatus($project_id);
+    //     ## USE RECORD LIST CACHE (if completed) (requires ARM)
+    //     if ($recordListCacheStatus == 'COMPLETE') {
+    //         $sql = sprintf("select 1 from redcap_record_list
+    //             where project_id = %d and record = '%s' limit 1",
+    //             intval($project_id),
+    //             db_escape($record)
+    //         );
+    //     }
+    //     ## USE DATA TABLE
+    //     else {
+    //         $sql = sprintf("select 1 from redcap_data
+    //             where project_id = %d and field_name = '%s'
+    //             and record regexp '%s' limit 1",
+    //             intval($project_id),
+    //             db_escape($P->table_pk),
+    //             db_escape($record)
+    //         );
+    //     }
+    //     $q = db_query($sql);
+    //     if (!$q) {
+    //         throw new \Exception("Unable to query redcap_data for $record in project $project_id - check your database connectivity and system logs");
+    //     }
+    //
+    //     if (db_num_rows($q) > 0) {
+    //         // Record is used
+    //         return false;
+    //     }
+    //
+    //
+    //     // STEP 3: LETS TRY TO ADD IT TO THE NEW RECORD CACHE TO ENSURE IT IS STILL UNIQUE
+    //     $sql = sprintf("insert into redcap_new_record_cache
+    //         (project_id, event_id, arm_id, record, creation_time)
+    //         values (%d, %d, %d, '%s', '%s')",
+    //         intval($project_id),
+    //         intval($event_id),
+    //         intval($arm_id),
+    //         db_escape($record),
+    //         db_escape(NOW)
+    //     );
+    //     if (db_query($sql)) {
+    //         // Success
+    //         return true;
+    //     } else {
+    //         // Duplicate or other error
+    //         // TODO: look at error code to differentiate from a lock error vs. another db error
+    //         return false;
+    //     }
+    // }
 
 
 
@@ -334,14 +319,14 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
             $this->emDebug("Invalid auto-delete setting for project $pid:", $delay);
             return;
         }
-        $this->emDebug("Public Dag autodelete is enabled for $pid with delay of $delay");
+        $this->emDebug("Public Dag auto-delete is enabled for $pid with delay of $delay");
 
         // Get the name of the logging table
         $log_event_table = method_exists('\REDCap', 'getLogEventTable') ? \REDCap::getLogEventTable($pid) : "redcap_log_event";
 
         // Query to get all records where there are only group_id or record_id fields for that record in redcap_data
         // along with the time they were last modified.
-        $result = $this->framework->query(
+        $result = $this->query(
             "select
                 rd.record,
                 sum(
@@ -350,7 +335,7 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
                         rd.field_name = ?, 1, 0
                     )
                 ) as defaultFields,
-                timestampdiff(HOUR, timestamp(max(rle.ts)), now()) as HoursSinceModified,
+                timestampdiff(HOUR, timestamp(max(rle.ts)), ?) as HoursSinceModified,
                 count(*) as allFields
             from
                 redcap_data rd
@@ -364,6 +349,7 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
                 and HoursSinceModified > ?
             ",
             [
+                date('Y-m-d H:i:s'),
                 $Proj->table_pk,
                 $pid,
                 $delay

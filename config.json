@@ -17,10 +17,7 @@
     }
   ],
 
-  "framework-version" : 2,
-
-  "permissions": [
-  ],
+  "framework-version" : 12,
 
   "no-auth-pages": [
     "survey",
