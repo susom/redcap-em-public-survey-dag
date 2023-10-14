@@ -111,7 +111,9 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
         $next_id = 0;
 
         // Load ALL record IDs (Across all arms?)
-        $records = REDCap::getData('array', null, array(REDCap::getRecordIdField()));
+        global $Proj;
+        $first_event_id = $Proj->firstEventId;
+        $records = REDCap::getData('array', null, array(REDCap::getRecordIdField()), $first_event_id);
 
         if ($prefixDag) {
             // We need to first determine the starting point for records with this prefix
