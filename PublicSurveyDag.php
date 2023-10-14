@@ -109,18 +109,22 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
 
         $prefix = '';
         $next_id = 0;
+
+        // Load ALL record IDs (Across all arms?)
         $records = REDCap::getData('array', null, array(REDCap::getRecordIdField()));
 
         if ($prefixDag) {
             // We need to first determine the starting point for records with this prefix
-            // e.g. stanford-123
+            // e.g. Stanford-123
 
             // See what kind of prefix is configured (either text or dag_id)
             $use_id_instead = $this->getProjectSetting('use-dag-id-instead');
-            $prefix = ( $use_id_instead ? $dag_id : REDCap::getGroupNames(true,$dag_id) ) . "-";
+            $prefix = trim( $use_id_instead ? $dag_id : REDCap::getGroupNames(true,$dag_id) ) . "-";
 
             // Get the length of the dag prefix so we can increment the suffix
             $prefix_len = strlen($prefix);
+
+            $this->emDebug("Prefix $prefix is $prefix_len chars long", REDCap::getGroupNames(true));
 
             // Load current records to find the current max suffix
             // TODO: add filter to database query for prefix
@@ -130,7 +134,7 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
                     # Case-insensitive match
                     $suffix = substr($k,$prefix_len);
                     if (is_numeric($suffix) && $suffix >= $max_id) {
-                        $max_id = $suffix;
+                        $max_id = intval($suffix);
                     }
                 }
             }
@@ -138,22 +142,24 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
             // Get current max ID
             foreach ($records as $k => $v) {
                 if (is_numeric($k) && $k >= $max_id) {
-                    $max_id = $k;
+                    $max_id = intval($k);
                 }
             }
         }
 
         // Reserve the Next_ID
-        $loop_count = 0;
+        $loop_count = 1;
         do {
             $max_id++;
             $next_id = $prefix . $max_id;
             $result = REDCap::reserveNewRecordId($this->getProjectId(), $next_id);
+            $this->emDebug("Try $loop_count with max of $max_id - reserving $next_id: " . ($result ? "true": "false"));
             // $result = self::reserveNewRecordId($this->getProjectId(), $next_id);
-            if ($loop_count++ > 100) {
+            if ($loop_count++ > 1000) {
                 throw new \Exception("Overrun in " . __METHOD__ . " - $loop_count failed attempts");
             }
         } while ($result === false);
+        $this->emDebug("Reserved $next_id in $loop_count tries");
 
         return $next_id;
     }
