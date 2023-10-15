@@ -23,6 +23,21 @@ if (empty($url_exists)) {
         created and assigned to the corresponding DAG.  The user will then be redirected to the survey URL for this
         new record.
     </p>
+<?php
+    global $Proj;
+    $arms = $Proj->numArms;
+    if($arms > 1) {
+?>
+        <p class="alert alert-danger">
+            <b>Multi-Arm Warning</b><br/>
+            It appears your project has more than one arm configured.  Please note that this external module is only
+            designed to handle single-arm projects.  The urls below represent the public survey url for the first
+            arm in the project.
+        </p>
+
+<?php
+    }
+?>
     <p>
         Below is a table with public survey equivalent urls for each DAG
     </p>
