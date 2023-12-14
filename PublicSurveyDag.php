@@ -332,6 +332,8 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
 
         // Query to get all records where there are only group_id or record_id fields for that record in redcap_data
         // along with the time they were last modified.
+        $data_table = method_exists('\REDCap', 'getDataTable') ? \REDCap::getDataTable($pid) : "redcap_data";
+
         $result = $this->query(
             "select
                 rd.record,
@@ -344,7 +346,7 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
                 timestampdiff(HOUR, timestamp(max(rle.ts)), ?) as HoursSinceModified,
                 count(*) as allFields
             from
-                redcap_data rd
+                ? rd
                 join " . $log_event_table . " rle on rle.project_id = rd.project_id and rle.pk = rd.record
             where
                 rd.project_id = ?
@@ -357,6 +359,7 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
             [
                 date('Y-m-d H:i:s'),
                 $Proj->table_pk,
+                $data_table,
                 $pid,
                 $delay
             ]
