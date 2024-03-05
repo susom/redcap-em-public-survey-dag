@@ -12,7 +12,7 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
 
     public $dags;
 
-    /**
+    /** message
      * returns array of [ id => name, ... ]
      */
     public function getDags() {
