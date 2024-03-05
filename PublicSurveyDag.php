@@ -346,7 +346,7 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
                 timestampdiff(HOUR, timestamp(max(rle.ts)), ?) as HoursSinceModified,
                 count(*) as allFields
             from
-                ? rd
+                " . $data_table . " rd
                 join " . $log_event_table . " rle on rle.project_id = rd.project_id and rle.pk = rd.record
             where
                 rd.project_id = ?
@@ -354,12 +354,11 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
                 rd.record
             having
                 defaultFields = allFields
-                and HoursSinceModified > ?
+                and HoursSinceModified >= ?
             ",
             [
-                date('Y-m-d H:i:s'),
                 $Proj->table_pk,
-                $data_table,
+                date('Y-m-d H:i:s'),
                 $pid,
                 $delay
             ]
@@ -377,7 +376,7 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
                 $record,
                 $Proj->table_pk,
                 $Proj->multiple_arms,
-                $Proj->project_id['randomization'],
+                $Proj->project['randomization'],
                 $Proj->project['status'],
                 $Proj->project['require_change_reason'],
                 $Proj->firstArmId,
