@@ -1,4 +1,5 @@
 <?php
+
 namespace Stanford\PublicSurveyDag;
 
 include_once "emLoggerTrait.php";
@@ -15,33 +16,38 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
     /** message
      * returns array of [ id => name, ... ]
      */
-    public function getDags() {
+    public function getDags()
+    {
         $this->dags = REDCap::getGroupNames();
         return $this->dags;
     }
 
 
-    public function getPublicDagUrl($dag_id) {
+    public function getPublicDagUrl($dag_id)
+    {
         $use_api_urls = $this->getSystemSetting("use-api-urls");
-        $base = $this->getUrl("survey.php",true, $use_api_urls);
+        $base = $this->getUrl("survey.php", true, $use_api_urls);
         $encoded = urlencode(base64_encode($dag_id));
         return $base . "&dag=" . $encoded;
     }
 
 
-    public function getDagFromUrl() {
+    public function getDagFromUrl()
+    {
         $encoded = $_GET['dag'];
         $dag_id = urldecode(base64_decode($encoded));
         return $dag_id;
     }
 
-    public function getAdditionalParamsFromUrl() {
+    public function getAdditionalParamsFromUrl()
+    {
         $exclude_keys = ["s", "hash", "page", "event_id", "pid", "pnid", "preview", "id", "sq", "prefix", "NOAUTH", "dag"];
         return array_diff_key($_GET, array_flip($exclude_keys));
     }
 
 
-    public function getPublicSurveyUrl() {
+    public function getPublicSurveyUrl()
+    {
         global $Proj;
         $survey_id = $Proj->firstFormSurveyId;
         $event_id = $Proj->firstEventId;
@@ -57,7 +63,8 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
      * @return bool|int|string
      * @throws \Exception
      */
-    public function createRecordFromDag($dag_id) {
+    public function createRecordFromDag($dag_id)
+    {
         global $Proj;
 
         // Find the next new record id according to EM settings
@@ -69,7 +76,7 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
         );
 
         if ($Proj->longitudinal) {
-            $event_name = REDCap::getEventNames(true,true,$Proj->firstEventId);
+            $event_name = REDCap::getEventNames(true, true, $Proj->firstEventId);
             $data['redcap_event_name'] = $event_name;
         }
 
@@ -89,7 +96,8 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
      * @param $id
      * @return string|null
      */
-    public function getFirstSurveyUrl($id) {
+    public function getFirstSurveyUrl($id)
+    {
         global $Proj;
         // $firstFormSurveyId = $Proj->firstFormSurveyId;
         return REDCap::getSurveyLink($id, $Proj->firstForm, $Proj->firstEventId);
@@ -102,7 +110,8 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
      * @return string
      * @throws \Exception
      */
-    function getNextDagId($dag_id) {
+    function getNextDagId($dag_id)
+    {
 
         // Determine Prefix
         $prefixDag = $this->getProjectSetting('prefix-record-with-dag');
@@ -119,7 +128,7 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
 
             // See what kind of prefix is configured (either text or dag_id)
             $use_id_instead = $this->getProjectSetting('use-dag-id-instead');
-            $prefix = trim( $use_id_instead ? $dag_id : REDCap::getGroupNames(true,$dag_id) ) . "-";
+            $prefix = trim($use_id_instead ? $dag_id : REDCap::getGroupNames(true, $dag_id)) . "-";
 
             // Get the length of the dag prefix so we can increment the suffix
             $prefix_len = strlen($prefix);
@@ -130,9 +139,9 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
             // TODO: add filter to database query for prefix
             foreach ($records as $k => $v) {
                 $k_prefix = substr($k, 0, $prefix_len);
-                if( strcasecmp($k_prefix, $prefix) == 0 ) {
+                if (strcasecmp($k_prefix, $prefix) == 0) {
                     # Case-insensitive match
-                    $suffix = substr($k,$prefix_len);
+                    $suffix = substr($k, $prefix_len);
                     if (is_numeric($suffix) && $suffix >= $max_id) {
                         $max_id = intval($suffix);
                     }
@@ -153,7 +162,7 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
             $max_id++;
             $next_id = $prefix . $max_id;
             $result = REDCap::reserveNewRecordId($this->getProjectId(), $next_id);
-            $this->emDebug("Try $loop_count with max of $max_id - reserving $next_id: " . ($result ? "true": "false"));
+            $this->emDebug("Try $loop_count with max of $max_id - reserving $next_id: " . ($result ? "true" : "false"));
             // $result = self::reserveNewRecordId($this->getProjectId(), $next_id);
             if ($loop_count++ > 1000) {
                 throw new \Exception("Overrun in " . __METHOD__ . " - $loop_count failed attempts");
@@ -169,10 +178,11 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
      * Cycle through each project and call the autoDelete method
      * @param $cron
      */
-    function autoDeleteCron($cron) {
+    function autoDeleteCron($cron)
+    {
         $enabledProjects = $this->getProjectsWithModuleEnabled();
         //$this->emDebug('EnabledProjects', $enabledProjects);
-        foreach($enabledProjects as $pid) {
+        foreach ($enabledProjects as $pid) {
             $deleteUrl = $this->getUrl("autoDelete.php", true, false) . "&pid=$pid";
             http_get($deleteUrl);
         }
@@ -297,14 +307,14 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
     // }
 
 
-
     /**
      * Check to see if this project has auto-delete enabled, if so, delete records
      * This can only be called in project context
      * @param $pid  Project ID
      * @throws \Exception
      */
-    function autoDelete() {
+    function autoDelete()
+    {
         // Get PID
         $pid = $this->getProjectId();
 
@@ -321,7 +331,7 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
         if (empty($delay)) {
             // Do nothing for this project
             return;
-        } elseif(intval($delay) != $delay) {
+        } elseif (intval($delay) != $delay) {
             $this->emDebug("Invalid auto-delete setting for project $pid:", $delay);
             return;
         }
@@ -343,34 +353,52 @@ class PublicSurveyDag extends \ExternalModules\AbstractExternalModule
                         rd.field_name = ?, 1, 0
                     )
                 ) as defaultFields,
-                timestampdiff(HOUR, timestamp(max(rle.ts)), ?) as HoursSinceModified,
+                timestampdiff(HOUR, timestamp(max(rle.last_ts)), ?) as HoursSinceModified,
                 count(*) as allFields
             from
                 " . $data_table . " rd
-                join " . $log_event_table . " rle on rle.project_id = rd.project_id and rle.pk = rd.record
+                            LEFT JOIN (
+                    SELECT
+                        project_id,
+                        pk,
+                        MAX(ts) AS last_ts
+                    FROM
+                        " . $log_event_table . "
+                    WHERE
+                        project_id = ?
+                    GROUP BY
+                        project_id, pk
+                ) rle ON rle.project_id = rd.project_id
+     AND rle.pk = rd.record
             where
                 rd.project_id = ?
             group by
                 rd.record
             having
-                defaultFields = allFields
+                /**
+                    * If the only fields present are the default fields (__GROUPID__ and PK field)
+                    * then we consider this an incomplete record eligible for deletion
+                    * add 1 to defaultFields to account for the complete field count
+                    */
+                defaultFields + 1 = allFields
                 and HoursSinceModified >= ?
             ",
             [
                 $Proj->table_pk,
                 date('Y-m-d H:i:s'),
                 $pid,
+                $pid,
                 $delay
             ]
         );
 
         $records = [];
-        while($row = $result->fetch_assoc()) {
+        while ($row = $result->fetch_assoc()) {
             $this->emDebug("Row", $row);
             $record = $row['record'];
             if (empty($record)) continue;
 
-            $records[]=$record;
+            $records[] = $record;
             $this->emDebug("Deleting $record");
             \Records::deleteRecord(
                 $record,
